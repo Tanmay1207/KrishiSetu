@@ -1,0 +1,11 @@
+# React
+node_modules/
+
+# .NET
+bin/
+obj/
+
+# Common
+.env
+.vscode/
+.idea/

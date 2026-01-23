@@ -1,0 +1,6 @@
+@KrishiSetu.Api_HostAddress = http://localhost:5209
+
+GET {{KrishiSetu.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

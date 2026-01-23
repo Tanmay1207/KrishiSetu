@@ -1,0 +1,13 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+E:\Smart_Farm\KrishiSetu.Api\Services\WorkerService.cs(32,25): error CS0266: Cannot implicitly convert type 'System.Linq.IQueryable<KrishiSetu.Api.Models.WorkerProfile>' to 'Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<KrishiSetu.Api.Models.WorkerProfile, KrishiSetu.Api.Models.User>'. An explicit conversion exists (are you missing a cast?) [E:\Smart_Farm\KrishiSetu.Api\KrishiSetu.Api.csproj]
+E:\Smart_Farm\KrishiSetu.Api\Services\WorkerService.cs(35,25): error CS0266: Cannot implicitly convert type 'System.Linq.IQueryable<KrishiSetu.Api.Models.WorkerProfile>' to 'Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<KrishiSetu.Api.Models.WorkerProfile, KrishiSetu.Api.Models.User>'. An explicit conversion exists (are you missing a cast?) [E:\Smart_Farm\KrishiSetu.Api\KrishiSetu.Api.csproj]
+
+Build FAILED.
+
+E:\Smart_Farm\KrishiSetu.Api\Services\WorkerService.cs(32,25): error CS0266: Cannot implicitly convert type 'System.Linq.IQueryable<KrishiSetu.Api.Models.WorkerProfile>' to 'Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<KrishiSetu.Api.Models.WorkerProfile, KrishiSetu.Api.Models.User>'. An explicit conversion exists (are you missing a cast?) [E:\Smart_Farm\KrishiSetu.Api\KrishiSetu.Api.csproj]
+E:\Smart_Farm\KrishiSetu.Api\Services\WorkerService.cs(35,25): error CS0266: Cannot implicitly convert type 'System.Linq.IQueryable<KrishiSetu.Api.Models.WorkerProfile>' to 'Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<KrishiSetu.Api.Models.WorkerProfile, KrishiSetu.Api.Models.User>'. An explicit conversion exists (are you missing a cast?) [E:\Smart_Farm\KrishiSetu.Api\KrishiSetu.Api.csproj]
+    0 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:01.47
