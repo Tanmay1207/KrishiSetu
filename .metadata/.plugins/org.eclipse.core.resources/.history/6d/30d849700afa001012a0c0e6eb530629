@@ -1,0 +1,11 @@
+package com.project.dtos;
+
+import com.project.Entity.BookingStatus;
+
+public class BookingResponseDTO {
+    private Long bookingId;
+    private double rent;
+    private double deposit;
+    private double penalty;
+    private BookingStatus status;
+}

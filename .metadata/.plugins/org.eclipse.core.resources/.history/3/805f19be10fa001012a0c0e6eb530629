@@ -1,0 +1,72 @@
+package com.project.dtos;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.project.Entity.Booking;
+import com.project.Entity.BookingStatus;
+@RequestMapping
+public class BookingResponseDTO {
+
+    private Long bookingId;
+    private double rent;
+    private double deposit;
+    private double penalty;
+    private BookingStatus status;
+    
+    private BookingResponseDTO mapToDTO(Booking booking) {
+
+        BookingResponseDTO dto = new BookingResponseDTO();
+        dto.setBookingId(booking.getId());
+        dto.setRent(booking.getRentAmount());
+        dto.setDeposit(booking.getDepositAmount());
+        dto.setPenalty(booking.getPenaltyAmount());
+        dto.setStatus(booking.getStatus());
+
+        return dto;
+        
+        
+    }
+
+    
+    // ===== GETTERS & SETTERS =====
+
+    public Long getBookingId() {
+        return bookingId;
+    }
+
+    public void setBookingId(Long bookingId) {
+        this.bookingId = bookingId;
+    }
+
+    public double getRent() {
+        return rent;
+    }
+
+    public void setRent(double rent) {
+        this.rent = rent;
+    }
+
+    public double getDeposit() {
+        return deposit;
+    }
+
+    public void setDeposit(double deposit) {
+        this.deposit = deposit;
+    }
+
+    public double getPenalty() {
+        return penalty;
+    }
+
+    public void setPenalty(double penalty) {
+        this.penalty = penalty;
+    }
+
+    public BookingStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(BookingStatus status) {
+        this.status = status;
+    }
+}

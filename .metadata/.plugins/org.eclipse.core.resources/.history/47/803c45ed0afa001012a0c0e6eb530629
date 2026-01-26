@@ -1,0 +1,21 @@
+package com.project.service;
+
+
+
+import java.util.List;
+
+import com.project.dtos.BookingRequestDTO;
+import com.project.dtos.BookingResponseDTO;
+
+public interface BookingService {
+
+    BookingResponseDTO createBooking(Long farmerId, BookingRequestDTO dto);
+
+    List<BookingResponseDTO> getMyBookings(Long userId, String role);
+
+    BookingResponseDTO getBookingById(Long id);
+
+    void initiateReturn(Long bookingId);
+
+    void completeBooking(Long bookingId);
+}

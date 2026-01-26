@@ -1,0 +1,90 @@
+package com.project.service;
+
+
+
+import org.springframework.stereotype.Service;
+import com.project.Entity.Booking;
+import com.project.Entity.BookingStatus;
+import com.project.Repository.BookingRepository;
+import com.project.dtos.BookingRequestDTO;
+import com.project.dtos.BookingResponseDTO;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class BookingServiceImpl implements BookingService {
+
+    private final BookingRepository bookingRepository;
+
+    public BookingServiceImpl(BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
+    }
+
+    @Override
+    public BookingResponseDTO createBooking(Long farmerId, BookingRequestDTO dto) {
+
+        Booking booking = new Booking();
+        booking.setFarmerId(farmerId);
+        booking.setMachineryId((Long) dto.getMachineryId());
+        booking.setRentAmount(1000);
+        booking.setDepositAmount(500);
+        booking.setPenaltyAmount(0);
+        booking.setStatus(BookingStatus.CREATED);
+
+        bookingRepository.save(booking);
+        return mapToDTO(booking);
+    }
+
+    @Override
+    public List<BookingResponseDTO> getMyBookings(Long userId, String role) {
+
+        List<Booking> bookings =
+                role.equalsIgnoreCase("FARMER")
+                        ? bookingRepository.findByFarmerId(userId)
+                        : bookingRepository.findByOwnerId(userId);
+
+        return bookings.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public BookingResponseDTO getBookingById(Long id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        return mapToDTO(booking);
+    }
+
+    @Override
+    public void initiateReturn(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setPenaltyAmount(200);
+        booking.setStatus(BookingStatus.RETURN_REQUESTED);
+        bookingRepository.save(booking);
+    }
+
+    @Override
+    public void completeBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setStatus(BookingStatus.COMPLETED);
+        bookingRepository.save(booking);
+    }
+
+    // ===== ENTITY → DTO MAPPER =====
+    private BookingResponseDTO mapToDTO(Booking booking) {
+
+        BookingResponseDTO dto = new BookingResponseDTO();
+        dto.setBookingId(booking.getId());
+        dto.setRent(booking.getRentAmount());
+        dto.setDeposit(booking.getDepositAmount());
+        dto.setPenalty(booking.getPenaltyAmount());
+        dto.setStatus(booking.getStatus());
+
+        return dto;
+    }
+}

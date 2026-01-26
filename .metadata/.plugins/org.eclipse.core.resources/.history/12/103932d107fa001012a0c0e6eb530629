@@ -1,0 +1,28 @@
+package com.project.Entity;
+import jakarta.persistence.*;
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "bookings")
+public class Booking {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long farmerId;
+    private Long ownerId;
+    private Long machineryId;
+
+    private double rentAmount;
+    private double depositAmount;
+    private double penaltyAmount;
+
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    @Enumerated(EnumType.STRING)
+    private BookingStatus status;
+
+    // getters & setters
+}

@@ -1,0 +1,17 @@
+spring.application.name=KrishiSetu
+
+
+spring.datasource.url=jdbc:mysql://localhost:3306/Booking?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=cdac
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+spring.jpa.open-in-view=false
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=update
+
+server.port=8081
+#JWT expiration time in msec for 2 hours
+
+#Un comment next property to understand spring security with console messages(can change the logging level to trace also)
+#logging.level.org.springframework.security=trace
