@@ -40,15 +40,27 @@ const DashboardShell = ({ children, title }) => {
         { name: 'Work History', path: '#history', icon: <Calendar size={20} /> },
     ];
 
-    const adminLinks = [
-        { name: 'System Overview', path: '/admin', icon: <BarChart2 size={20} /> },
-        { name: 'User List', path: '#users', icon: <User size={20} /> },
-        { name: 'Approvals', path: '#approvals', icon: <ShieldCheck size={20} /> },
+    const superAdminLinks = [
+        { name: 'Manage Admins', path: '/admin#admins', icon: <ShieldCheck size={20} /> },
     ];
 
-    const links = user?.role === 'Admin' ? adminLinks :
-        user?.role === 'Farmer' ? farmerLinks :
-            user?.role === 'MachineryOwner' ? ownerLinks : workerLinks;
+    const adminLinks = [
+        { name: 'System Overview', path: '/admin', icon: <BarChart2 size={20} /> },
+        { name: 'User List', path: '/admin#users', icon: <User size={20} /> },
+        { name: 'Approvals', path: '/admin#approvals', icon: <ShieldCheck size={20} /> },
+    ];
+
+    const isSuperAdmin = user?.roles?.includes('ROLE_SUPER_ADMIN');
+    const isAdmin = user?.roles?.includes('ROLE_ADMIN');
+    const isFarmer = user?.roles?.includes('ROLE_FARMER');
+    const isOwner = user?.roles?.includes('ROLE_OWNER');
+    const isWorker = user?.roles?.includes('ROLE_WORKER');
+
+    const links = isSuperAdmin ? superAdminLinks :
+        isAdmin ? adminLinks :
+            isFarmer ? farmerLinks :
+                isOwner ? ownerLinks :
+                    workerLinks;
 
     return (
         <div className="flex h-screen bg-slate-100 overflow-hidden font-inter">
@@ -97,11 +109,17 @@ const DashboardShell = ({ children, title }) => {
                     <div className="px-4 py-6 border-t border-white/10 space-y-4">
                         <div className="flex items-center gap-3 px-4 py-2">
                             <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-lg">
-                                {user?.username?.charAt(0).toUpperCase()}
+                                {user?.email?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div className="overflow-hidden">
-                                <p className="font-bold text-sm truncate">{user?.username}</p>
-                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{user?.role === 'MachineryOwner' ? 'Owner' : user?.role === 'FarmWorker' ? 'Worker' : user?.role}</p>
+                                <p className="font-bold text-sm truncate">{user?.email}</p>
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                                    {isSuperAdmin ? 'Super Admin' :
+                                        isAdmin ? 'Admin' :
+                                            isFarmer ? 'Farmer' :
+                                                isOwner ? 'Machinery Owner' :
+                                                    isWorker ? 'Farm Worker' : 'User'}
+                                </p>
                             </div>
                         </div>
                         <button

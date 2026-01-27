@@ -14,21 +14,22 @@ const Login = () => {
         e.preventDefault();
         setError('');
         try {
-            const user = await login(email, password);
-            if (!user.isApproved) {
-                setError('Your account is pending admin approval. Please try again later.');
-                return;
+            const userData = await login(email, password);
+            const roles = userData.roles;
+
+            if (roles.includes('ROLE_SUPER_ADMIN') || roles.includes('ROLE_ADMIN')) {
+                navigate('/admin');
+            } else if (roles.includes('ROLE_FARMER')) {
+                navigate('/farmer');
+            } else if (roles.includes('ROLE_OWNER')) {
+                navigate('/owner');
+            } else if (roles.includes('ROLE_WORKER')) {
+                navigate('/worker');
+            } else if (roles.includes('ROLE_USER')) {
+                navigate('/farmer'); // Fallback
             }
-            if (user.role === 'Admin') navigate('/admin');
-            else if (user.role === 'Farmer') navigate('/farmer');
-            else if (user.role === 'MachineryOwner') navigate('/owner');
-            else if (user.role === 'FarmWorker') navigate('/worker');
         } catch (err) {
-            if (err.response && err.response.status === 403) {
-                setError('Your account is pending admin approval. Please try again later.');
-            } else {
-                setError('Login failed. Please check your email and password.');
-            }
+            setError(err.response?.data?.message || 'Login failed. Please check your email and password.');
         }
     };
 

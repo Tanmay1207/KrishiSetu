@@ -158,10 +158,10 @@ const WorkerDashboard = () => {
                         <div className="relative z-10">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-16 h-16 rounded-3xl bg-primary-500 flex items-center justify-center font-black text-2xl shadow-xl shadow-primary-500/20">
-                                    {user.username.charAt(0).toUpperCase()}
+                                    {user?.email?.charAt(0).toUpperCase() || 'U'}
                                 </div>
                                 <div>
-                                    <h4 className="text-xl font-black tracking-tight uppercase italic">{user.username}</h4>
+                                    <h4 className="text-xl font-black tracking-tight uppercase italic">{user?.email}</h4>
                                     <span className="text-xs font-black text-primary-400 uppercase tracking-widest italic tracking-tighter">Farm Worker</span>
                                 </div>
                             </div>

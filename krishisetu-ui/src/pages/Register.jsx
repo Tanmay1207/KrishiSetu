@@ -13,8 +13,10 @@ const Register = () => {
         role: 'Farmer'
     });
     const [success, setSuccess] = useState(false);
+    const [needsOtp, setNeedsOtp] = useState(false);
+    const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
-    const { register } = useAuth();
+    const { register, verifyOtp } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -42,17 +44,22 @@ const Register = () => {
         }
 
         try {
-            const user = await register(formData);
-            if (user.isApproved) {
-                if (user.role === 'Admin') navigate('/admin');
-                else if (user.role === 'Farmer') navigate('/farmer');
-                else if (user.role === 'MachineryOwner') navigate('/owner');
-                else if (user.role === 'FarmWorker') navigate('/worker');
-            } else {
-                setSuccess(true);
-            }
+            await register(formData);
+            setNeedsOtp(true);
         } catch (err) {
-            setError('Could not create account. Please check your information.');
+            setError(err.response?.data?.message || 'Could not create account. Please check your information.');
+        }
+    };
+
+    const handleOtpSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+            await verifyOtp(formData.email, otp);
+            setSuccess(true);
+            setNeedsOtp(false);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Invalid OTP. Please try again.');
         }
     };
 
@@ -81,15 +88,38 @@ const Register = () => {
                             <div className="bg-emerald-100 w-20 h-20 rounded-full flex items-center justify-center text-emerald-600 mx-auto mb-8">
                                 <CheckCircle size={40} />
                             </div>
-                            <h2 className="text-3xl font-black font-outfit text-slate-900 mb-4 italic uppercase tracking-tighter">Registration Successful!</h2>
+                            <h2 className="text-3xl font-black font-outfit text-slate-900 mb-4 italic uppercase tracking-tighter">Verification Successful!</h2>
                             <p className="text-slate-500 font-medium leading-relaxed mb-8">
-                                Your account has been created but is currently <span className="text-primary-600 font-bold italic">pending admin approval</span>.
+                                Your email has been verified. Your account is now <span className="text-primary-600 font-bold italic">pending admin approval</span>.
                                 You will be able to log in once an administrator approves your profile.
                             </p>
                             <Link to="/login" className="inline-flex items-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-slate-800 transition-all">
-                                Go to Terminal <ArrowRight size={18} />
+                                Go to Home <ArrowRight size={18} />
                             </Link>
                         </div>
+                    ) : needsOtp ? (
+                        <form onSubmit={handleOtpSubmit} className="space-y-8">
+                            <div className="text-center mb-8">
+                                <p className="text-slate-500 font-medium">We've sent a 6-digit OTP to <span className="text-slate-900 font-bold">{formData.email}</span></p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 text-center block">Enter OTP</label>
+                                <input
+                                    type="text" required
+                                    maxLength="6"
+                                    className="input-field h-20 text-center text-3xl font-black tracking-[1rem]"
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    placeholder="000000"
+                                />
+                            </div>
+                            <button type="submit" className="w-full h-20 bg-slate-900 text-white rounded-[2.5rem] font-bold text-sm uppercase tracking-widest shadow-2xl shadow-slate-900/30 hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-3 mt-10">
+                                Verify & Create Account <ArrowRight size={18} />
+                            </button>
+                            <button type="button" onClick={() => setNeedsOtp(false)} className="w-full text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
+                                Back to Registration
+                            </button>
+                        </form>
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

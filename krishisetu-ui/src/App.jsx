@@ -12,7 +12,20 @@ import AdminDashboard from './pages/AdminDashboard';
 const ProtectedRoute = ({ children, role }) => {
     const { user } = useAuth();
     if (!user) return <Navigate to="/login" />;
-    if (role && user.role !== role) return <Navigate to="/" />;
+
+    // Map human-readable roles from props to backend ROLE names
+    const roleMap = {
+        'Admin': 'ROLE_ADMIN',
+        'Farmer': 'ROLE_FARMER',
+        'MachineryOwner': 'ROLE_OWNER',
+        'FarmWorker': 'ROLE_WORKER'
+    };
+
+    const requiredRole = roleMap[role] || 'ROLE_USER';
+
+    if (role && !user.roles?.includes(requiredRole) && !user.roles?.includes('ROLE_SUPER_ADMIN')) {
+        return <Navigate to="/" />;
+    }
     return children;
 };
 

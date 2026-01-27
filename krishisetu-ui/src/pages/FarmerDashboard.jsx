@@ -101,7 +101,7 @@ const FarmerDashboard = () => {
                                     />
                                     <div className="absolute top-4 left-4 flex gap-2">
                                         <span className="bg-white/90 backdrop-blur px-4 py-1.5 rounded-full text-[10px] font-black text-primary-700 uppercase tracking-widest leading-none shadow-sm">
-                                            {item.categoryName}
+                                            {item.category?.name || 'Machinery'}
                                         </span>
                                     </div>
                                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-900/60 to-transparent">

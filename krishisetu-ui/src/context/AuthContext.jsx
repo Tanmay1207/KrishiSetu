@@ -17,33 +17,42 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const response = await api.post('/auth/login', { email, password });
-        const { token, username, role, isApproved } = response.data;
+        const response = await api.post('/auth/signin', { email, password });
+        const { token, id, roles } = response.data;
 
-        if (isApproved && token) {
+        if (token) {
             localStorage.setItem('token', token);
-            const userData = { username, role, isApproved };
+            const userData = { id, email, roles };
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
             return userData;
         }
 
-        return { username, role, isApproved };
+        return response.data;
     };
 
     const register = async (userData) => {
-        const response = await api.post('/auth/register', userData);
-        const { token, username, role, isApproved } = response.data;
+        // Map frontend roles to backend roles
+        let apiRole = 'ROLE_FARMER';
+        if (userData.role === 'MachineryOwner') apiRole = 'ROLE_OWNER';
+        if (userData.role === 'FarmWorker') apiRole = 'ROLE_WORKER';
+        if (userData.role === 'Admin') apiRole = 'ROLE_ADMIN';
 
-        if (isApproved && token) {
-            localStorage.setItem('token', token);
-            const user = { username, role, isApproved };
-            localStorage.setItem('user', JSON.stringify(user));
-            setUser(user);
-            return user;
-        }
+        const signupData = {
+            firstName: userData.fullName.split(' ')[0],
+            lastName: userData.fullName.split(' ').slice(1).join(' ') || ' ',
+            email: userData.email,
+            password: userData.password,
+            role: apiRole
+        };
 
-        return { username, role, isApproved };
+        const response = await api.post('/auth/signup', signupData);
+        return response.data;
+    };
+
+    const verifyOtp = async (email, otp) => {
+        const response = await api.post('/auth/verify-otp', { email, otp });
+        return response.data;
     };
 
     const logout = () => {
@@ -53,7 +62,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, verifyOtp, logout, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );
