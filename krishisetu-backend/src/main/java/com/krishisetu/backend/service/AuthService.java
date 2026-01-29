@@ -34,12 +34,21 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private WorkerService workerService;
+
     @Transactional
     public User registerUser(String firstName, String lastName, String email, String password, String roleName) {
         User user = createUserEntity(firstName, lastName, email, password, roleName);
         user.setEnabled(false);
         user.setApproved(false);
         User savedUser = userRepository.save(user);
+
+        // Create worker profile if role is worker
+        if (roleName.contains("WORKER") || roleName.equalsIgnoreCase("FarmWorker")) {
+            workerService.createProfileForUser(savedUser);
+        }
+
         generateAndSendOtp(savedUser);
         return savedUser;
     }
