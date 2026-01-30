@@ -47,6 +47,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Dependency Injection
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IMachineryService, MachineryService>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IBookingService, BookingService>();

@@ -33,6 +33,8 @@ namespace KrishiSetu.Api.Models
         public Role Role { get; set; } = null!;
         
         public bool IsApproved { get; set; } = false;
+        
+        public bool EmailVerified { get; set; } = false;
 
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

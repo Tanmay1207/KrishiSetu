@@ -26,6 +26,16 @@ namespace KrishiSetu.Api.Controllers
             return Ok(result);
         }
 
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto verifyOtpDto)
+        {
+            var result = await _authService.VerifyOtp(verifyOtpDto.Email, verifyOtpDto.Otp);
+            if (result == null)
+                return BadRequest("Invalid or expired OTP.");
+
+            return Ok(result);
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto loginDto)
         {

@@ -8,11 +8,14 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
+using Microsoft.Extensions.Caching.Memory;
+
 namespace KrishiSetu.Api.Services
 {
     public interface IAuthService
     {
         Task<AuthResponseDto?> Register(RegisterDto registerDto);
+        Task<AuthResponseDto?> VerifyOtp(string email, string otp);
         Task<AuthResponseDto?> Login(LoginDto loginDto);
         string HashPassword(string password);
         bool VerifyPassword(string password, string hash);
@@ -22,11 +25,15 @@ namespace KrishiSetu.Api.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
+        private readonly IMemoryCache _cache;
 
-        public AuthService(ApplicationDbContext context, IConfiguration configuration)
+        public AuthService(ApplicationDbContext context, IConfiguration configuration, IEmailService emailService, IMemoryCache cache)
         {
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
+            _cache = cache;
         }
 
         public async Task<AuthResponseDto?> Register(RegisterDto registerDto)
@@ -45,7 +52,8 @@ namespace KrishiSetu.Api.Services
                 FullName = registerDto.FullName,
                 PhoneNumber = registerDto.PhoneNumber,
                 RoleId = role.Id,
-                IsApproved = registerDto.Role == "Admin" // Auto-approve admin
+                IsApproved = registerDto.Role == "Admin", // Auto-approve admin
+                EmailVerified = false
             };
 
             _context.Users.Add(user);
@@ -59,11 +67,44 @@ namespace KrishiSetu.Api.Services
                 await _context.SaveChangesAsync();
             }
 
+            // Generate OTP
+            var otp = new Random().Next(100000, 999999).ToString();
+            
+            // Store OTP in cache for 5 minutes
+            _cache.Set($"OTP_{registerDto.Email}", otp, TimeSpan.FromMinutes(5));
+            
+            // Send OTP
+            await _emailService.SendEmailAsync(registerDto.Email, "KrishiSetu - Verify your Email", $"Your OTP is: {otp}");
+
             return new AuthResponseDto
             {
-                Token = user.IsApproved ? GenerateJwtToken(user, role.Name) : string.Empty,
+                Token = "", // No token until verified
                 Username = user.Username,
                 Role = role.Name,
+                IsApproved = user.IsApproved
+            };
+        }
+
+        public async Task<AuthResponseDto?> VerifyOtp(string email, string otp)
+        {
+            if (!_cache.TryGetValue($"OTP_{email}", out string? storedOtp) || storedOtp != otp)
+            {
+                return null; // Invalid or expired OTP
+            }
+
+            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return null;
+
+            user.EmailVerified = true;
+            await _context.SaveChangesAsync();
+            
+            _cache.Remove($"OTP_{email}"); // Clear OTP
+
+            return new AuthResponseDto
+            {
+                Token = user.IsApproved ? GenerateJwtToken(user, user.Role.Name) : string.Empty,
+                Username = user.Username,
+                Role = user.Role.Name,
                 IsApproved = user.IsApproved
             };
         }
@@ -79,6 +120,12 @@ namespace KrishiSetu.Api.Services
             {
                 Console.WriteLine($"Login failed: User {loginDto.Email} not found.");
                 return null;
+            }
+
+            if (!user.EmailVerified)
+            {
+                 Console.WriteLine($"Login failed: User {loginDto.Email} not verified.");
+                 return null;
             }
 
             var enteredHash = HashPassword(loginDto.Password);

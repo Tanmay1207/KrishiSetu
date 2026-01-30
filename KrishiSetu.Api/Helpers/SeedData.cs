@@ -48,33 +48,46 @@ namespace KrishiSetu.Api.Helpers
             {
                 Console.WriteLine("Error: Admin role not found!");
             }
-            else if (adminUser == null)
-            {
-                context.Users.Add(new User
-                {
-                    Username = "admin",
-                    Email = "admin@krishisetu.com",
-                    PasswordHash = "e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7", // Correct hash for Admin@123
-                    FullName = "System Admin",
-                    PhoneNumber = "9999999999",
-                    RoleId = adminRole.Id,
-                    IsApproved = true
-                });
-                await context.SaveChangesAsync();
-                Console.WriteLine("Admin user created: admin@krishisetu.com / Admin@123");
-            }
             else
             {
-                // Force reset password to Admin@123
-                adminUser.PasswordHash = "e86f78a8a3caf0b60d8e74e5942aa6d86dc150cd3c03338aef25b7d2d7e3acc7";
-                adminUser.IsApproved = true;
+                var passwordHash = HashPassword("Admin@123");
+                
+                if (adminUser == null)
+                {
+                    context.Users.Add(new User
+                    {
+                        Username = "admin",
+                        Email = "admin@krishisetu.com",
+                        PasswordHash = passwordHash,
+                        FullName = "System Admin",
+                        PhoneNumber = "9999999999",
+                        RoleId = adminRole.Id,
+                        IsApproved = true,
+                        EmailVerified = true
+                    });
+                    Console.WriteLine("Admin user created: admin@krishisetu.com / Admin@123");
+                }
+                else
+                {
+                    // Force reset password to Admin@123
+                    adminUser.PasswordHash = passwordHash;
+                    adminUser.IsApproved = true;
+                    adminUser.EmailVerified = true;
+                    Console.WriteLine("Admin user password reset to Admin@123");
+                }
                 await context.SaveChangesAsync();
-                Console.WriteLine("Admin user password reset to Admin@123");
             }
-
+            
             var userCount = await context.Users.CountAsync();
             Console.WriteLine($"Total Users in DB: {userCount}");
             Console.WriteLine("--- Seeding Complete ---");
+        }
+
+        private static string HashPassword(string password)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
         }
     }
 }
