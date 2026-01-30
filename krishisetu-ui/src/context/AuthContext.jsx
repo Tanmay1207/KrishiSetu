@@ -17,12 +17,22 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const response = await api.post('/auth/signin', { email, password });
-        const { token, id, roles } = response.data;
+        const response = await api.post('/auth/login', { email, password });
+        const { token, username, role, isApproved } = response.data;
 
         if (token) {
             localStorage.setItem('token', token);
-            const userData = { id, email, roles };
+
+            // Map backend role to frontend roles array
+            let mappedRole = 'ROLE_USER';
+            if (role === 'Admin') mappedRole = 'ROLE_ADMIN';
+            else if (role === 'Farmer') mappedRole = 'ROLE_FARMER';
+            else if (role === 'MachineryOwner') mappedRole = 'ROLE_OWNER';
+            else if (role === 'FarmWorker') mappedRole = 'ROLE_WORKER';
+
+            const roles = [mappedRole];
+
+            const userData = { username, email, roles, isApproved };
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
             return userData;
@@ -33,20 +43,23 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         // Map frontend roles to backend roles
-        let apiRole = 'ROLE_FARMER';
-        if (userData.role === 'MachineryOwner') apiRole = 'ROLE_OWNER';
-        if (userData.role === 'FarmWorker') apiRole = 'ROLE_WORKER';
-        if (userData.role === 'Admin') apiRole = 'ROLE_ADMIN';
+        // Backend expects: "Farmer", "MachineryOwner", "FarmWorker", "Admin"
+        // Frontend sends: "Farmer", "MachineryOwner", "FarmWorker"
+        // No mapping needed if we ensure frontend sends exactly what backend expects in Role name lookup
+        // However, backend Role table has specific names. Let's check AuthService.cs:
+        // var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == registerDto.Role);
+        // We need to ensure frontend sends valid Role Names.
 
         const signupData = {
-            firstName: userData.fullName.split(' ')[0],
-            lastName: userData.fullName.split(' ').slice(1).join(' ') || ' ',
+            username: userData.username,
             email: userData.email,
             password: userData.password,
-            role: apiRole
+            fullName: userData.fullName,
+            phoneNumber: userData.phoneNumber,
+            role: userData.role // "Farmer", "MachineryOwner", "FarmWorker"
         };
 
-        const response = await api.post('/auth/signup', signupData);
+        const response = await api.post('/auth/register', signupData);
         return response.data;
     };
 
