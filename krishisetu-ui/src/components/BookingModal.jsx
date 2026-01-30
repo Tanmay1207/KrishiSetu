@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const BookingModal = ({ item, onClose, onSuccess }) => {
+    const { user } = useAuth();
     const isWorker = !!item.workerId;
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
     const [hours, setHours] = useState('8');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -12,26 +12,70 @@ const BookingModal = ({ item, onClose, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         try {
+            // Strict Date Handling: Always use the machine/worker's set availableDate
+            const bookingDate = item.availableDate;
+            if (!bookingDate) {
+                setError('This resource does not have an available date set by the owner.');
+                setLoading(false);
+                return;
+            }
+
             const payload = isWorker
                 ? {
-                    workerId: item.id,
+                    workerProfileId: item.id,
                     hours: parseInt(hours),
-                    // Backend will handle dates based on worker profile
-                    startDate: new Date(),
-                    endDate: new Date()
+                    startDate: bookingDate,
+                    endDate: bookingDate
                 }
                 : {
                     machineryId: item.id,
-                    startDate: item.availableDate ? new Date(item.availableDate) : startDate,
-                    endDate: item.availableDate ? new Date(item.availableDate) : endDate
+                    startDate: bookingDate,
+                    endDate: bookingDate
                 };
 
-            await api.post('/farmer/bookings/create', payload);
-            onSuccess();
+            const response = await api.post('/farmer/bookings/create', payload);
+            const { orderId, amount, currency, keyId } = response.data;
+
+            const options = {
+                key: keyId,
+                amount: amount * 100,
+                currency: currency,
+                name: "KrishiSetu",
+                description: "Farm Services Booking",
+                order_id: orderId,
+                handler: async function (response) {
+                    try {
+                        await api.post('/farmer/bookings/verify', {
+                            razorpayPaymentId: response.razorpay_payment_id,
+                            razorpayOrderId: response.razorpay_order_id,
+                            razorpaySignature: response.razorpay_signature
+                        });
+                        onSuccess();
+                    } catch (err) {
+                        setError('Payment verification failed. Please contact support.');
+                    }
+                },
+                modal: {
+                    ondismiss: function () {
+                        setLoading(false);
+                    }
+                },
+                prefill: {
+                    name: user ? `${user.firstName} ${user.lastName}` : "Farmer",
+                    email: user ? user.email : "farmer@example.com",
+                    contact: "9999999999"
+                },
+                theme: {
+                    color: "#059669",
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
         } catch (err) {
             setError(err.response?.data || 'Could not create booking. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
@@ -40,17 +84,7 @@ const BookingModal = ({ item, onClose, onSuccess }) => {
     const rateLabel = isWorker ? 'Hourly Rate' : 'Rental Price';
 
     // Calculate total
-    let total = 0;
-    if (isWorker) {
-        total = (parseInt(hours) || 0) * rate;
-    } else {
-        if (item.availableDate) {
-            total = rate;
-        } else if (startDate && endDate) {
-            const days = Math.max(1, (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
-            total = days * rate;
-        }
-    }
+    const total = isWorker ? (parseInt(hours) || 0) * rate : rate;
 
     return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -69,13 +103,14 @@ const BookingModal = ({ item, onClose, onSuccess }) => {
 
                     <form onSubmit={handleSubmit} className="space-y-6">
 
-                        {isWorker ? (
-                            <>
-                                <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                                    <span>Scheduled Date: {item.availableDate ? new Date(item.availableDate).toLocaleDateString() : 'Available'}</span>
-                                </div>
+                        <div>
+                            <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 mb-6">
+                                <span>Booking Slot: {item.availableDate ? new Date(item.availableDate).toLocaleDateString() : 'Immediate'}</span>
+                            </div>
+
+                            {isWorker && (
                                 <div>
-                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Number of Hours</label>
+                                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Working Hours</label>
                                     <input
                                         type="number"
                                         min="1"
@@ -86,38 +121,8 @@ const BookingModal = ({ item, onClose, onSuccess }) => {
                                         onChange={(e) => setHours(e.target.value)}
                                     />
                                 </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="bg-emerald-50 text-emerald-700 p-4 rounded-2xl text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                                    <span>Scheduled Date: {item.availableDate ? new Date(item.availableDate).toLocaleDateString() : 'Immediate Availability'}</span>
-                                </div>
-                                {!item.availableDate && (
-                                    <>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Start Date</label>
-                                            <input
-                                                type="date"
-                                                required
-                                                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-bold"
-                                                value={startDate}
-                                                onChange={(e) => setStartDate(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">End Date</label>
-                                            <input
-                                                type="date"
-                                                required
-                                                className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-200 outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-bold"
-                                                value={endDate}
-                                                onChange={(e) => setEndDate(e.target.value)}
-                                            />
-                                        </div>
-                                    </>
-                                )}
-                            </>
-                        )}
+                            )}
+                        </div>
 
                         <div className="bg-emerald-50/50 border border-emerald-100 p-6 rounded-3xl">
                             <div className="flex justify-between mb-2">

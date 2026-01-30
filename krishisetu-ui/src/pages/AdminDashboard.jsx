@@ -10,6 +10,7 @@ const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
     const [machinery, setMachinery] = useState([]);
+    const [roleRequests, setRoleRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('users');
     const [error, setError] = useState('');
@@ -35,6 +36,8 @@ const AdminDashboard = () => {
                 setActiveTab('users');
             } else if (hash === '#approvals') {
                 setActiveTab('machinery');
+            } else if (hash === '#requests') {
+                setActiveTab('requests');
             } else {
                 setActiveTab('users');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -64,8 +67,13 @@ const AdminDashboard = () => {
                 stats: statsRes.data,
                 usersCount: (usersRes.data || []).length,
                 machineryCount: (machineryRes.data || []).length,
-                machineryData: machineryRes.data
+                allUsers: usersRes.data // Log ALL users to see structure
             });
+
+            // Debug filter logic
+            const unapproved = (usersRes.data || []).filter(u => !u.isApproved);
+            console.log("Unapproved Users Filtered:", unapproved);
+            console.log("Sample User Structure:", usersRes.data && usersRes.data[0] ? usersRes.data[0] : "No users");
         } catch (err) {
             console.error("Dashboard general error:", err);
             setError('Failed to fetch some dashboard data. Please try again.');
@@ -185,6 +193,7 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 gap-10">
                 {activeTab === 'users' && (
                     <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        {/* ... Existing User Table ... */}
                         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase italic">Pending User Approvals</h3>
@@ -265,6 +274,7 @@ const AdminDashboard = () => {
                             </table>
                         </div>
                     </section>
+                )}
                 )}
 
                 {activeTab === 'machinery' && (
@@ -362,6 +372,23 @@ const AdminDashboard = () => {
 
                 {activeTab === 'admins' && isSuperAdmin && (
                     <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto w-full">
+                        <div className="flex justify-center p-6 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex items-center gap-1 bg-slate-200/50 p-1.5 rounded-2xl w-fit">
+                                <button
+                                    onClick={() => setActiveTab('admins')}
+                                    className={`px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admins' ? 'bg-white text-primary-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Manage Admins
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('requests')}
+                                    className={`px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'requests' ? 'bg-white text-primary-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Role Requests
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="p-8 border-b border-slate-100 bg-slate-50/50">
                             <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase italic">Add New Admin</h3>
                             <p className="text-sm text-slate-500 font-bold uppercase tracking-widest text-[10px]">Create an administrative account with full access. No OTP required.</p>
@@ -424,6 +451,101 @@ const AdminDashboard = () => {
                                 <ShieldCheck size={18} /> Create Admin Account
                             </button>
                         </form>
+                    </section>
+                )}
+
+                {activeTab === 'requests' && isSuperAdmin && (
+                    <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex justify-center p-6 border-b border-slate-100 bg-slate-50/50">
+                            <div className="flex items-center gap-1 bg-slate-200/50 p-1.5 rounded-2xl w-fit">
+                                <button
+                                    onClick={() => setActiveTab('admins')}
+                                    className={`px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admins' ? 'bg-white text-primary-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Manage Admins
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('requests')}
+                                    className={`px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'requests' ? 'bg-white text-primary-600 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Role Requests
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase italic">Role Upgrade Requests</h3>
+                                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest text-[10px]">Review requests from users who want to switch or add roles.</p>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                        <th className="px-8 py-5">User</th>
+                                        <th className="px-8 py-5">Requested Role</th>
+                                        <th className="px-8 py-5">Reason</th>
+                                        <th className="px-8 py-5 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {roleRequests.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" className="px-8 py-20 text-center text-slate-500 font-medium tracking-tight">
+                                                <div className="flex flex-col items-center gap-4">
+                                                    <div className="p-4 bg-slate-50 rounded-full">
+                                                        <Users size={48} className="text-slate-300" />
+                                                    </div>
+                                                    <p>No pending role requests.</p>
+                                                    <button onClick={fetchData} className="text-primary-600 font-bold text-xs uppercase tracking-widest mt-2 flex items-center gap-2">
+                                                        <RefreshCw size={14} /> Refresh List
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        roleRequests.map(req => (
+                                            <tr key={req.id} className="hover:bg-slate-50/80 transition-colors">
+                                                <td className="px-8 py-6">
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 text-sm uppercase italic tracking-tighter">
+                                                            {req.user?.firstName} {req.user?.lastName}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 font-bold tracking-widest">{req.user?.email}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <span className="px-3 py-1 bg-primary-50 text-primary-700 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                                        {req.requestedRole.replace('ROLE_', '')}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-6 max-w-xs break-words text-xs text-slate-600">
+                                                    {req.reason || 'No reason provided.'}
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center justify-center gap-3">
+                                                        <button
+                                                            onClick={() => handleRoleAction(req.id, 'approve')}
+                                                            className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 hover:shadow-lg transition-all active:scale-95"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRoleAction(req.id, 'reject')}
+                                                            className="bg-red-50 text-red-600 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-100 transition-all active:scale-95"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </section>
                 )}
             </div>

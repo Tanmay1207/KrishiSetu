@@ -33,10 +33,11 @@ const FarmerDashboard = () => {
 
     const fetchData = async () => {
         try {
+            const today = new Date().toISOString().split('T')[0];
             const [macRes, bookRes, workRes] = await Promise.all([
-                api.get('/farmer/machinery/search'),
+                api.get(`/farmer/machinery/search`),
                 api.get('/farmer/bookings/history'),
-                api.get('/farmer/workers/search')
+                api.get(`/farmer/workers/search`)
             ]);
             setMachinery(macRes.data);
             setBookings(bookRes.data);
@@ -62,11 +63,39 @@ const FarmerDashboard = () => {
 
     const handleConfirmPayment = async () => {
         try {
-            await api.post(`/farmer/bookings/${selectedPaymentBooking.id}/pay`);
-            fetchData();
-            setSelectedPaymentBooking(null);
+            const response = await api.post(`/farmer/bookings/${selectedPaymentBooking.id}/initiate-payment`);
+            const { orderId, amount, currency, keyId } = response.data;
+
+            const options = {
+                key: keyId,
+                amount: amount * 100,
+                currency: currency,
+                name: "KrishiSetu",
+                description: "Booking Payment",
+                order_id: orderId,
+                handler: async function (response) {
+                    await api.post('/farmer/bookings/verify', {
+                        razorpayPaymentId: response.razorpay_payment_id,
+                        razorpayOrderId: response.razorpay_order_id,
+                        razorpaySignature: response.razorpay_signature
+                    });
+                    setSelectedPaymentBooking(null);
+                    fetchData();
+                },
+                prefill: {
+                    name: user.firstName + " " + user.lastName,
+                    email: user.email,
+                    contact: "9999999999"
+                },
+                theme: {
+                    color: "#059669",
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
         } catch (err) {
-            alert('Payment failed. Please try again.');
+            alert('Payment initialization failed. Please try again.');
         }
     };
 

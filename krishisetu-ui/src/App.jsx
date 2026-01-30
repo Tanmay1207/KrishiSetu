@@ -7,6 +7,7 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import OwnerDashboard from './pages/OwnerDashboard';
 import WorkerDashboard from './pages/WorkerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import UserProfile from './pages/UserProfile';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, role }) => {
@@ -43,6 +44,8 @@ function App() {
                     <Route path="/owner" element={<ProtectedRoute role="MachineryOwner"><OwnerDashboard /></ProtectedRoute>} />
                     <Route path="/worker" element={<ProtectedRoute role="FarmWorker"><WorkerDashboard /></ProtectedRoute>} />
                     <Route path="/admin" element={<ProtectedRoute role="Admin"><AdminDashboard /></ProtectedRoute>} />
+                    <Route path="/admin" element={<ProtectedRoute role="Admin"><AdminDashboard /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
                 </Routes>
             </Router>
         </AuthProvider>

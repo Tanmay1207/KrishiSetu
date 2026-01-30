@@ -36,9 +36,11 @@ const DashboardShell = ({ children, title }) => {
 
     const workerLinks = [
         { name: 'Job Board', path: '#board', icon: <Briefcase size={20} /> },
-        { name: 'My Profile', path: '#profile', icon: <User size={20} /> },
+        { name: 'My Profile', path: '/profile', icon: <User size={20} /> },
         { name: 'Work History', path: '#history', icon: <Calendar size={20} /> },
     ];
+
+    const profileLink = { name: 'My Profile', path: '/profile', icon: <User size={20} /> };
 
     const superAdminLinks = [
         { name: 'Manage Admins', path: '/admin#admins', icon: <ShieldCheck size={20} /> },
@@ -56,11 +58,11 @@ const DashboardShell = ({ children, title }) => {
     const isOwner = user?.roles?.includes('ROLE_OWNER');
     const isWorker = user?.roles?.includes('ROLE_WORKER');
 
-    const links = isSuperAdmin ? superAdminLinks :
+    const links = (isSuperAdmin ? superAdminLinks :
         isAdmin ? adminLinks :
             isFarmer ? farmerLinks :
                 isOwner ? ownerLinks :
-                    workerLinks;
+                    workerLinks).concat([profileLink]);
 
     return (
         <div className="flex h-screen bg-slate-100 overflow-hidden font-inter">
