@@ -23,6 +23,7 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
+        
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -53,6 +54,7 @@ builder.Services.AddScoped<IMachineryService, MachineryService>();
 builder.Services.AddScoped<IWorkerService, WorkerService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IRazorpayService, RazorpayService>();
 
 // JWT Authentication
 

@@ -7,28 +7,34 @@ namespace KrishiSetu.Api.Services
 {
     public interface IBookingService
     {
-        Task<BookingDto?> CreateBooking(int farmerId, CreateBookingDto dto);
+        Task<BookingResponseDto?> CreateBooking(int farmerId, CreateBookingDto dto);
         Task<IEnumerable<BookingDto>> GetFarmerBookings(int farmerId);
         Task<IEnumerable<BookingDto>> GetOwnerBookings(int ownerId);
         Task<IEnumerable<BookingDto>> GetWorkerBookings(int workerId);
         Task<bool> ProcessPayment(int bookingId);
         Task<bool> UpdateBookingStatus(int bookingId, string status);
+        Task<bool> VerifySignature(string paymentId, string orderId, string signature);
     }
 
     public class BookingService : IBookingService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IRazorpayService _razorpayService;
 
-        public BookingService(ApplicationDbContext context)
+        public BookingService(ApplicationDbContext context, IRazorpayService razorpayService)
         {
             _context = context;
+            _razorpayService = razorpayService;
         }
 
-        public async Task<BookingDto?> CreateBooking(int farmerId, CreateBookingDto dto)
+        public async Task<BookingResponseDto?> CreateBooking(int farmerId, CreateBookingDto dto)
         {
             decimal totalAmount = 0;
             DateTime startDate = dto.StartDate;
             DateTime endDate = dto.EndDate;
+
+            // Handle Frontend Field Name Mismatch
+            int? workerId = dto.WorkerId ?? dto.WorkerProfileId;
 
             Machinery? machinery = null;
             WorkerProfile? worker = null;
@@ -54,9 +60,9 @@ namespace KrishiSetu.Api.Services
                 }
             }
 
-            if (dto.WorkerId.HasValue)
+            if (workerId.HasValue)
             {
-                worker = await _context.WorkerProfiles.FindAsync(dto.WorkerId.Value);
+                worker = await _context.WorkerProfiles.FindAsync(workerId.Value);
                 if (worker == null) return null;
 
                 // For workers, we use their AvailableDate
@@ -75,7 +81,7 @@ namespace KrishiSetu.Api.Services
             {
                 FarmerId = farmerId,
                 MachineryId = dto.MachineryId,
-                WorkerId = dto.WorkerId,
+                WorkerId = workerId,
                 StartDate = startDate,
                 EndDate = endDate,
                 TotalAmount = totalAmount,
@@ -98,7 +104,20 @@ namespace KrishiSetu.Api.Services
 
             await _context.SaveChangesAsync();
 
-            return await GetBookingDto(booking.Id);
+            var bookingDto = await GetBookingDto(booking.Id);
+            if (bookingDto == null) return null;
+
+            // Create Razorpay Order
+            var orderId = _razorpayService.CreateOrder(totalAmount, $"BOOKING_{booking.Id}");
+
+            return new BookingResponseDto
+            {
+                Booking = bookingDto,
+                OrderId = orderId,
+                Amount = totalAmount,
+                Currency = "INR",
+                KeyId = _razorpayService.GetKeyId()
+            };
         }
 
         public async Task<IEnumerable<BookingDto>> GetFarmerBookings(int farmerId)
@@ -188,6 +207,11 @@ namespace KrishiSetu.Api.Services
             booking.Status = status;
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<bool> VerifySignature(string paymentId, string orderId, string signature)
+        {
+            return _razorpayService.VerifySignature(paymentId, orderId, signature);
         }
 
         private async Task<BookingDto?> GetBookingDto(int id)
